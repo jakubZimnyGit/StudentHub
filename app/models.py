@@ -24,10 +24,6 @@ class User(Base):
         self.email = f"{name}.{last_name}@StudentHub.com"
         self.password = generate_password()
 
-        """
-        The password is generated automatically when creating a new user.
-        Need to add hashing to functionality to make it secure.
-        """
 
 class Student(Base):
     __tablename__ = 'students'
