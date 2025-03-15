@@ -14,6 +14,7 @@ class UserCreate(User):
     subject: Optional[Literal["Geography", "Mathematics", "English"]] = None
 
 class UserCreateOut(User):
+    id: int
     group: Optional[str] = None
     semester: Optional[int] = None
     subject: Optional[str] = None
@@ -28,3 +29,13 @@ class UserCreateOut(User):
     class config:
         from_attributes = True
 
+class UserOut(User):
+    id: int
+    group: Optional[str] = None
+    semester: Optional[int] = None
+    subject: Optional[str] = None
+    email: str
+    role: str
+
+    class config:
+        from_attributes = True

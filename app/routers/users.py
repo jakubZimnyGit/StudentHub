@@ -1,5 +1,4 @@
-from hmac import new
-from re import U
+from typing import List
 from click import group
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -13,10 +12,56 @@ router = APIRouter(
 
 
 
+@router.get('/', response_model=List[schemas.UserOut])
+def getUsers(session: Session = Depends(get_session)):
+
+    users = (
+        session.query(
+            models.User.id,
+            models.User.name,
+            models.User.last_name,
+            models.User.email,
+            models.User.role,
+            models.Student.group.label("group"),
+            models.Student.semester.label("semester"),
+            models.Teacher.subject.label("subject")
+        )
+        .join(models.Student, models.User.id == models.Student.id, isouter=True) 
+        .join(models.Teacher, models.User.id == models.Teacher.id, isouter=True) 
+        .all() 
+    )
+    
+    return users
+
+@router.get('/{id}', response_model=schemas.UserOut)
+def getUser(id: int, session: Session = Depends(get_session)):
+
+    user, student, teacher = (
+        session.query(models.User, models.Student, models.Teacher)
+        .outerjoin(models.Student, models.User.id == models.Student.id)
+        .outerjoin(models.Teacher, models.User.id == models.Teacher.id)
+        .filter(models.User.id == id)
+        .first()
+    )
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user_dict = user.__dict__.copy()
+
+    
+    if student:
+        user_dict.update({k: v for k, v in student.__dict__.items()})
+    if teacher:
+        user_dict.update({k: v for k, v in teacher.__dict__.items()})
+
+    return user_dict
+           
+
 @router.post('/', response_model=schemas.UserCreateOut)
 def create_user(user: schemas.UserCreate, session: Session = Depends(get_session)):
     try:
-        new_user = models.User(name = user.name, last_name = user.last_name)
+        new_user = models.User(name = user.name, last_name = user.last_name, role=user.role)
         not_hashed_password = new_user.password
         new_user.password = utils.hash_password(new_user.password)
         session.add(new_user); session.commit(); session.refresh(new_user)
@@ -53,7 +98,3 @@ def addTeacher(user: models.User, User_info: schemas.UserCreate, session: Sessio
     return user
 
 
-
-"""
-added hashing functionality, divided the create_user endpoint into two functions. 
-"""

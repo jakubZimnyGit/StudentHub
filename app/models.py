@@ -17,11 +17,13 @@ class User(Base):
     email = Column(String, unique=True)
     password = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    role = Column(String, nullable=False)
     
-    def __init__(self, name, last_name):
+    def __init__(self, name, last_name, role):
         self.name = name
         self.last_name = last_name
         self.email = f"{name}.{last_name}@StudentHub.com"
+        self.role = role
         self.password = generate_password()
 
 
@@ -48,6 +50,6 @@ class Grade(Base):
     student_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
     subject = Column(String, nullable=False, primary_key=True)
     grade = Column(Integer, nullable=False)
-    teacher_id = Column(Integer, ForeignKey('teacher.id', ondelete='CASCADE'))
+    teacher_id = Column(Integer, ForeignKey('teachers.id', ondelete='CASCADE'))
     
     
