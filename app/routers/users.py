@@ -1,16 +1,52 @@
 from typing import List
-from click import group
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from .. import models, schemas, utils
 from .. database import get_session
+from typing import Optional
 
 router = APIRouter(
     prefix='/users',
     tags=['Users']
 )
 
+@router.get('/teachers', response_model=List[schemas.TeacherOut])
+def getTeachers(session: Session = Depends(get_session),
+                subject: Optional[str] = None):
+    
+    query = session.query(
+            models.User.name,
+            models.User.last_name,
+            models.User.email,
+            models.Teacher.subject.label("subject"),
+        ).join(models.Teacher, models.User.id == models.Teacher.id)
 
+    if subject:
+        query = query.filter(models.Teacher.subject == subject)
+
+    teachers = query.all()
+    return teachers
+
+@router.get('/students', response_model=List[schemas.StudentOut])
+def getStudents(session: Session = Depends(get_session),
+                group: Optional[str] = None,
+                semester: Optional[int] = None):
+    
+    query = session.query(
+            models.User.name,
+            models.User.last_name,
+            models.User.email,
+            models.Student.group.label("group"),
+            models.Student.semester.label("semester"),
+        ).join(models.Student, models.User.id == models.Student.id)
+
+    if group:
+        query = query.filter(models.Student.group == group)
+    if semester:
+        query = query.filter(models.Student.semester == semester)
+
+    students = query.all()
+    return students
 
 @router.get('/', response_model=List[schemas.UserOut])
 def getUsers(session: Session = Depends(get_session)):
@@ -58,7 +94,7 @@ def getUser(id: int, session: Session = Depends(get_session)):
     return user_dict
            
 
-@router.post('/', response_model=schemas.UserCreateOut)
+@router.post('/', response_model=schemas.UserCreateOut, status_code=status.HTTP_201_CREATED)
 def create_user(user: schemas.UserCreate, session: Session = Depends(get_session)):
     try:
         new_user = models.User(name = user.name, last_name = user.last_name, role=user.role)
